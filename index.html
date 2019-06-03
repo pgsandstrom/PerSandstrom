@@ -1,125 +1,106 @@
 <!DOCTYPE html>
-<!--[if lt IE 7]>
-<html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
-<!--[if IE 7]>
-<html class="no-js lt-ie9 lt-ie8"> <![endif]-->
-<!--[if IE 8]>
-<html class="no-js lt-ie9"> <![endif]-->
-<!--[if gt IE 8]><!-->
-<html class="no-js"> <!--<![endif]-->
+<html>
 <head>
-    <meta charset="utf-8">
-    <title>Per Sandström</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <!-- Bootstrap -->
-    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet">
-    <link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet"/>
+	<!-- Like, seriously, I made this page in 2012 and has put in like 1 hour of work since then. -->
+	<meta charset="utf-8">
+	<title>Per Sandström</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet" />
 
-    <link href="http://fonts.googleapis.com/css?family=Abel|Open+Sans:400,600" rel="stylesheet"/>
+	<link href="http://fonts.googleapis.com/css?family=Abel|Open+Sans:400,600" rel="stylesheet" />
 
-    <link rel="stylesheet" href="css/normalize.css">
-    <link rel="stylesheet" href="css/main.css">
+	<link rel="stylesheet" href="css/normalize.css">
 
-    <link rel="shortcut icon"
-          href="/favicon.png"/>
+	<link rel="shortcut icon"
+		  href="/favicon.png" />
 
-    <style>
+	<style>
+		html {
+			background: url(img/bergen.jpg) no-repeat center center fixed;
+			-webkit-background-size: cover;
+			-moz-background-size: cover;
+			-o-background-size: cover;
+			background-size: cover;
+		}
+		body {
+			padding-top: 20px;
+			font-size: 16px;
+			font-family: "Open Sans", serif;
+			background: transparent;
+		}
+		h1 {
+			font-family: "Abel", Arial, sans-serif;
+			font-weight: 400;
+			font-size: 40px;
+		}
+		.container {
+			display: flex;
+			justify-content: center;
+		}
+		.panel {
+			background-color: rgba(255, 255, 255, 0.9);
+			width: 600px;
+			padding: 15px;
+			margin-bottom: 20px;
+			background-color: #fff;
+			border: 1px solid #ddd;
+			border-radius: 4px;
+			box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+		}
+		.margin-base-vertical {
+			margin: 40px 0;
+		}
 
-            /* http://css-tricks.com/perfect-full-page-background-image/ */
-        html {
-            background: url(img/bergen.jpg) no-repeat center center fixed;
-            -webkit-background-size: cover;
-            -moz-background-size: cover;
-            -o-background-size: cover;
-            background-size: cover;
-        }
+		.btn {
+			color: #fff;
+			background-color: #428bca;
+			border-color: #428bca;
+			border-radius: 4px;
+			padding: 8px;
+			text-decoration: none;
+		}
 
-        body {
-            padding-top: 20px;
-            font-size: 16px;
-            font-family: "Open Sans", serif;
-            background: transparent;
-        }
-
-        h1 {
-            font-family: "Abel", Arial, sans-serif;
-            font-weight: 400;
-            font-size: 40px;
-        }
-
-            /* Override B3 .panel adding a subtly transparent background */
-        .panel {
-            background-color: rgba(255, 255, 255, 0.9);
-        }
-
-        .margin-base-vertical {
-            margin: 40px 0;
-        }
-
-    </style>
-
-    <script src="js/vendor/modernizr-2.6.2.min.js"></script>
+	</style>
 </head>
 <body>
-<!--[if lt IE 7]>
-<p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade
-    your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to
-    improve your experience.</p>
-<![endif]-->
-
 <div class="container">
-    <div class="row">
-        <div class="col-lg-6 col-offset-3 panel">
 
-            <h1 class="margin-base-vertical">Welcome to the world of tomorrow</h1>
+	<div class="panel">
 
-            <p>
-                My name is Per Sandström, and this is my web site. I know it's not much, but I prefer to keep it light.
-            </p>
+		<h1 class="margin-base-vertical">Welcome to the world of tomorrow</h1>
 
-            <p>
-                I currently work as software engineer, where I code and create stuff. My profession is something I hold
-                dear, but it is not enough.
-            </p>
+		<p>
+			My name is Per Sandström.
+		</p>
 
-            <p>
-                I like many things, and each has its time. Right now I want to spread my wings, and rhyme.
-            </p>
+		<p>
+			I like to create stuff, and do stuff.
+		</p>
 
-            <div>
-                <a class="btn btn-primary" href="https://github.com/pgsandstrom">Github</a>
-                <a class="btn btn-primary" href="http://pgsandstrom.wordpress.com">Blog</a>
-                <a class="btn btn-primary" href="http://stackoverflow.com/users/249871/pgsandstrom">Stack overflow</a>
-            </div>
+		<p>
+			But most of all, I like to take it easy.
+		</p>
 
-            <div class="margin-base-vertical">
-                <small class="text-muted"><a href="http://www.xaros.org/">Background picture by Isak Barbopoulos</a>
-                </small>
-            </div>
+		<p>
+			I do consulting. You can reach me at <a href = "mailto: consulting@persandstrom.com">consulting@persandstrom.com</a>. I do cool and professional frontend stuff, primarily with React. This site is not a good example.
+		</p>
 
-        </div>
-        <!-- //main content -->
-    </div>
-    <!-- //row -->
+		<p>
+			For non-professional things reach me at <a href = "mailto: hello@persandstrom.com">hello@persandstrom.com</a>
+		</p>
+
+		<div>
+			<a class="btn btn-primary" href="https://github.com/pgsandstrom" target="_blank">Github</a>
+			<a class="btn btn-primary" href="http://stackoverflow.com/users/249871/pgsandstrom" target="_blank">Stack overflow</a>
+		</div>
+
+		<div class="margin-base-vertical">
+			<small><a href="http://www.xaros.org/" target="_blank">Background picture by Isak Barbopoulos</a>
+			</small>
+		</div>
+
+	</div>
+
 </div>
-<!-- //container -->
-
-<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-<script>window.jQuery || document.write('<script src="js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
-<script src="js/plugins.js"></script>
-<script src="js/main.js"></script>
-
-<!-- Google Analytics j-->
-<script>
-    var _gaq = [
-        ['_setAccount', 'UA-42968676-1'],
-        ['_trackPageview']
-    ];
-    (function (d, t) {
-        var g = d.createElement(t), s = d.getElementsByTagName(t)[0];
-        g.src = '//www.google-analytics.com/ga.js';
-        s.parentNode.insertBefore(g, s)
-    }(document, 'script'));
-</script>
 </body>
 </html>
