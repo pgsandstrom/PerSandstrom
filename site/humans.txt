@@ -7,9 +7,10 @@
 
 # THANKS
 
-    html5boilerplate
+    Isak Barbopoulos -- the photograph -- xaros.org
+    The two people on the ridge, whoever they are
 
 # TECHNOLOGY COLOPHON
 
-    HTML5, CSS3
-    Normalize.css, jQuery, Modernizr
+    HTML, CSS, a little vanilla JavaScript
+    No frameworks, no build step, no dependencies
