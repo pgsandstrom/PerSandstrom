@@ -14,17 +14,21 @@
 	// Where the pair stands, as a fraction of img/bergen.jpg (1280x852):
 	// centre of the two of them, plus roughly how tall they are.
 	const SUBJECT = { x: 0.575, y: 0.777, h: 0.051 };
-	// The one doing the waving, so the bubble belongs to somebody.
-	const SPEAKER = { x: 0.562, y: 0.754 };
+	// Each speech bubble hangs off a head, also in image fractions. The order
+	// they appear in is set by the transition-delay in the stylesheet.
+	const SPEAKERS = [
+		{ id: 'bubble-quote', x: 0.562, y: 0.754 }, // the one waving
+		{ id: 'bubble-lol', x: 0.591, y: 0.754 }, // the one with folded arms
+	];
 	const ZOOM = 4.2;
 	const FRAME_Y = 0.5; // where they end up on screen, top to bottom
 
 	const html = document.documentElement;
 	const scene = document.getElementById('scene');
-	const bubble = document.getElementById('bubble');
 	const bar = document.getElementById('bar');
 	const hint = document.getElementById('hint');
-	if (!scene || !bubble || !bar) return;
+	const bubbles = SPEAKERS.map((s) => ({ ...s, el: document.getElementById(s.id) }));
+	if (!scene || !bar || bubbles.some((b) => !b.el)) return;
 
 	let natural = { w: 1280, h: 852 }; // replaced once the real file loads
 	let watching = false;
@@ -70,12 +74,26 @@
 		document.body.style.setProperty('--fx', `${cx}px`);
 		document.body.style.setProperty('--fy', `${cy}px`);
 
-		// Speech bubble goes just above the speaker's head. Everything moves
-		// with the same scale about the subject, so the speaker ends up at
+		// Each bubble goes just above its speaker's head. Everything moves with
+		// the same scale about the subject, so a speaker ends up at
 		// centre + (their offset from the subject) * ZOOM.
-		const s = imgPoint(SPEAKER.x, SPEAKER.y, box);
-		bubble.style.left = `${clamp(cx + (s.x - p.x) * ZOOM, 80, innerWidth - 80)}px`;
-		bubble.style.top = `${Math.max(cy + (s.y - p.y) * ZOOM - 18, 62)}px`;
+		for (const b of bubbles) {
+			const s = imgPoint(b.x, b.y, box);
+			b.el.style.left = `${cx + (s.x - p.x) * ZOOM}px`;
+			b.el.style.top = `${Math.max(cy + (s.y - p.y) * ZOOM - 18, 62)}px`;
+		}
+
+		// The two of them get closer together as the viewport shrinks, so the
+		// long line has to be capped against the gap rather than a fixed width,
+		// or it grows straight through the other guy's bubble in landscape.
+		const gap = (SPEAKERS[1].x - SPEAKERS[0].x) * box.w * ZOOM;
+		bubbles[0].el.style.maxWidth = `${clamp((gap - 40) * 2, 140, 240)}px`;
+
+		// Now that the widths are settled, nudge anything hanging off an edge.
+		for (const b of bubbles) {
+			const half = b.el.offsetWidth / 2 + 10;
+			b.el.style.left = `${clamp(parseFloat(b.el.style.left), half, innerWidth - half)}px`;
+		}
 	}
 
 	function setBar(on) {

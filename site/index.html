@@ -209,16 +209,17 @@
         opacity: 1;
       }
 
-      #bubble {
+      .bubble {
         position: fixed;
         z-index: 8;
         padding: 0.65em 1.05em;
         border-radius: 0.85em;
         background: #fbf8f2;
         color: #14161c;
-        font: 600 16px/1.2 var(--sans);
+        font: 600 16px/1.32 var(--sans);
         letter-spacing: 0.01em;
-        white-space: nowrap;
+        text-align: center;
+        text-wrap: balance;
         box-shadow: 0 0.7em 2em rgba(0, 0, 0, 0.55);
         opacity: 0;
         transform: translate(-50%, -100%) scale(0.5);
@@ -228,7 +229,7 @@
           opacity 0.2s ease,
           transform 0.45s cubic-bezier(0.22, 1.7, 0.4, 1);
       }
-      #bubble::after {
+      .bubble::after {
         content: "";
         position: absolute;
         left: 50%;
@@ -238,10 +239,25 @@
         border-bottom: 0;
         border-top-color: #fbf8f2;
       }
-      html.watching #bubble {
+      html.watching .bubble {
         opacity: 1;
         transform: translate(-50%, -100%) scale(1);
+      }
+
+      /* Starting point only — JS narrows this to fit the gap between the two
+         of them, which shrinks with the viewport while the text does not. */
+      #bubble-quote {
+        max-width: 15em;
+      }
+      html.watching #bubble-quote {
         transition-delay: 1.5s;
+      }
+
+      #bubble-lol {
+        white-space: nowrap;
+      }
+      html.watching #bubble-lol {
+        transition-delay: 2.5s;
       }
 
       /* ---- toolbar ----------------------------------------------------- */
@@ -315,7 +331,7 @@
       @media (prefers-reduced-motion: reduce) {
         #scene,
         #stage,
-        #bubble,
+        .bubble,
         body::before,
         body::after {
           transition-duration: 0.01ms;
@@ -371,7 +387,10 @@
       </div>
     </main>
 
-    <div id="bubble" aria-hidden="true">friendship</div>
+    <div class="bubble" id="bubble-quote" aria-hidden="true">
+      Language is the house of the truth of Being.
+    </div>
+    <div class="bubble" id="bubble-lol" aria-hidden="true">lol</div>
 
     <div class="bar" id="bar">
       <button class="pill" type="button" data-act="watch">Watch view</button>
