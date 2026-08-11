@@ -8,9 +8,5 @@
 # THANKS
 
     Isak Barbopoulos -- the photograph -- xaros.org
-    The two people on the ridge, whoever they are
+    To myself, amor fati.
 
-# TECHNOLOGY COLOPHON
-
-    HTML, CSS, a little vanilla JavaScript
-    No frameworks, no build step, no dependencies
