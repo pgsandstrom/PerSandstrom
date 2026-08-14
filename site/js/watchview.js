@@ -11,16 +11,18 @@
 (() => {
 	'use strict';
 
-	// Where the pair stands, as a fraction of img/bergen.jpg (1280x852):
+	// Where the pair stands, as a fraction of img/bergen.jpg (4256x2832):
 	// centre of the two of them, plus roughly how tall they are.
-	const SUBJECT = { x: 0.575, y: 0.777, h: 0.051 };
+	const SUBJECT = { x: 0.640, y: 0.779, h: 0.044 };
 	// Each speech bubble hangs off a head, also in image fractions. The order
 	// they appear in is set by the transition-delay in the stylesheet.
 	const SPEAKERS = [
-		{ id: 'bubble-quote', x: 0.562, y: 0.754 }, // the one waving
-		{ id: 'bubble-lol', x: 0.591, y: 0.754 }, // the one with folded arms
+		{ id: 'bubble-quote', x: 0.628, y: 0.759 }, // the one waving
+		{ id: 'bubble-lol', x: 0.653, y: 0.759 }, // the one with folded arms
 	];
-	const ZOOM = 4.2;
+	// This crop sits about 15% wider than the old one, so it needs proportionally
+	// more zoom to bring the two of them up to the same size on screen.
+	const ZOOM = 4.9;
 	const FRAME_Y = 0.5; // where they end up on screen, top to bottom
 
 	const html = document.documentElement;
@@ -30,7 +32,7 @@
 	const bubbles = SPEAKERS.map((s) => ({ ...s, el: document.getElementById(s.id) }));
 	if (!scene || !bar || bubbles.some((b) => !b.el)) return;
 
-	let natural = { w: 1280, h: 852 }; // replaced once the real file loads
+	let natural = { w: 4256, h: 2832 }; // replaced once the real file loads
 	let watching = false;
 
 	const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
