@@ -2,11 +2,14 @@
  * watchview.js — pushes the page aside and zooms the background photo in on the
  * two people standing on the ridge.
  *
- * The photo is painted with background-size: cover, so where those two actually
- * land on screen depends on the viewport aspect ratio. Everything below works
- * backwards from a fixed point in the *image* to the matching point in the
+ * The photo is sized as background-size: cover would size it, so where those two
+ * actually land on screen depends on the viewport aspect ratio. Everything below
+ * works backwards from a fixed point in the *image* to the matching point in the
  * viewport, scales about that point so it cannot drift, and translates it to the
  * middle of the screen. Same maths places the speech bubble.
+ *
+ * The size is worked out here rather than left to `cover` because the layer is
+ * deliberately bigger than the viewport — see OVERSCAN.
  */
 (() => {
 	'use strict';
@@ -20,10 +23,27 @@
 		{ id: 'bubble-quote', x: 0.628, y: 0.759 }, // the one waving
 		{ id: 'bubble-lol', x: 0.653, y: 0.759 }, // the one with folded arms
 	];
-	// This crop sits about 15% wider than the old one, so it needs proportionally
-	// more zoom to bring the two of them up to the same size on screen.
-	const ZOOM = 4.9;
+	// How tall the two of them should end up on screen, in CSS pixels. A fixed
+	// scale factor cannot do this: cover has already scaled the photo to the
+	// viewport, so the same factor compounds with it — on a 4K ultrawide the
+	// old 4.9 blew them up to 735px, three times their size on a laptop, and
+	// pushed the layer past the ~16k the compositor will rasterise. Aiming at a
+	// height instead keeps the framing, and the bubbles hanging off it,
+	// identical at every width.
+	const SUBJECT_PX = 275;
+	const SUBJECT_MAX_VH = 0.3; // ...but never this much of a short viewport
+	const ZOOM = { min: 1.6, max: 6.5 };
+	const MAX_LAYER = 15000; // px; a backstop against an absurdly big layer
 	const FRAME_Y = 0.5; // where they end up on screen, top to bottom
+	// The layer is grown past the viewport by this much a side, and the photo
+	// painted into it at the size the viewport alone would have taken. Nothing
+	// looks different at rest — but zooming about a point near an edge no
+	// longer runs out of photo, which is exactly what a wide window causes.
+	const OVERSCAN = 0.3;
+	// At rest, never let them sit further down the screen than this. A wide
+	// window crops a lot off the top and bottom of the photo, and they stand
+	// low enough in it to be cropped away altogether.
+	const REST_MAX_Y = 0.86;
 
 	const html = document.documentElement;
 	const scene = document.getElementById('scene');
@@ -41,16 +61,29 @@
 	probe.src = 'img/bergen.jpg';
 	probe.decode().then(() => {
 		if (probe.naturalWidth) natural = { w: probe.naturalWidth, h: probe.naturalHeight };
-		if (watching) aim();
+		aim();
 	}).catch(() => { /* keep the fallback dimensions */ });
 
 	// Undo `background-size: cover` for one point: the image is scaled up until
 	// it covers the viewport, then centred, so the overflow is split evenly.
+	// Vertically that is only true while it can be: centring a very wide window
+	// drops the pair off the bottom edge, so the crop follows them down as far
+	// as the bottom of the photo allows.
 	function coverBox() {
 		const vw = innerWidth, vh = innerHeight;
 		const cover = Math.max(vw / natural.w, vh / natural.h);
 		const w = natural.w * cover, h = natural.h * cover;
-		return { x: (vw - w) / 2, y: (vh - h) / 2, w, h };
+		const centred = (vh - h) / 2;
+		const inFrame = vh * REST_MAX_Y - SUBJECT.y * h;
+		return { x: (vw - w) / 2, y: clamp(inFrame, vh - h, centred), w, h };
+	}
+
+	// Whatever it takes to bring the pair up to SUBJECT_PX from the size cover
+	// already gave them.
+	function zoomFor(box) {
+		const target = Math.min(SUBJECT_PX, innerHeight * SUBJECT_MAX_VH);
+		const fit = Math.min(target / (SUBJECT.h * box.h), MAX_LAYER / box.w);
+		return clamp(fit, ZOOM.min, ZOOM.max);
 	}
 
 	// Viewport position of a point given as a fraction of the photo, at rest.
@@ -59,17 +92,38 @@
 	}
 
 	function aim() {
+		const vw = innerWidth, vh = innerHeight;
 		const box = coverBox();
+		const zoom = zoomFor(box);
 		const p = imgPoint(SUBJECT.x, SUBJECT.y, box);
-		const cx = innerWidth / 2;
-		const cy = innerHeight * FRAME_Y;
+		// Everything above is in viewport coordinates; the layer starts one
+		// overscan up and to the left of them.
+		const ox = vw * OVERSCAN, oy = vh * OVERSCAN;
+
+		// Painted at the size and place the viewport asked for, inside a bigger
+		// box — cover would have blown it up to the box instead.
+		scene.style.backgroundSize = `${box.w}px ${box.h}px`;
+		scene.style.backgroundPosition = `${box.x + ox}px ${box.y + oy}px`;
+
+		// How much photo there is to work with: the layer, cropped to the part
+		// of it the photo actually reaches.
+		const edge = {
+			l: Math.max(-ox, box.x), r: Math.min(vw + ox, box.x + box.w),
+			t: Math.max(-oy, box.y), b: Math.min(vh + oy, box.y + box.h),
+		};
+		// Where they are headed. Scaling about a point near an edge drags the
+		// far edge in behind it, so the framing gives way before the photo runs
+		// out — better a slightly off-centre subject than a bare strip of page.
+		// With the overscan there is usually room, and this changes nothing.
+		const cx = clamp(vw / 2, vw - (edge.r - p.x) * zoom, (p.x - edge.l) * zoom);
+		const cy = clamp(vh * FRAME_Y, vh - (edge.b - p.y) * zoom, (p.y - edge.t) * zoom);
 
 		// Scale about the subject so it never drifts, then slide it to the
 		// middle of the screen — with transform-origin on the subject, the
 		// translate lands it exactly on the target.
-		scene.style.transformOrigin = `${p.x}px ${p.y}px`;
+		scene.style.transformOrigin = `${p.x + ox}px ${p.y + oy}px`;
 		scene.style.transform = watching
-			? `translate(${cx - p.x}px, ${cy - p.y}px) scale(${ZOOM})`
+			? `translate(${cx - p.x}px, ${cy - p.y}px) scale(${zoom})`
 			: 'scale(1)';
 
 		// The focus vignette is body::after, so its centre goes on <body>.
@@ -78,23 +132,24 @@
 
 		// Each bubble goes just above its speaker's head. Everything moves with
 		// the same scale about the subject, so a speaker ends up at
-		// centre + (their offset from the subject) * ZOOM.
+		// centre + (their offset from the subject) * zoom.
 		for (const b of bubbles) {
 			const s = imgPoint(b.x, b.y, box);
-			b.el.style.left = `${cx + (s.x - p.x) * ZOOM}px`;
-			b.el.style.top = `${Math.max(cy + (s.y - p.y) * ZOOM - 18, 62)}px`;
+			b.el.style.left = `${cx + (s.x - p.x) * zoom}px`;
+			b.el.style.top = `${Math.max(cy + (s.y - p.y) * zoom - 18, 62)}px`;
 		}
 
-		// The two of them get closer together as the viewport shrinks, so the
-		// long line has to be capped against the gap rather than a fixed width,
-		// or it grows straight through the other guy's bubble in landscape.
-		const gap = (SPEAKERS[1].x - SPEAKERS[0].x) * box.w * ZOOM;
+		// The gap between the two of them is now steady across viewports, but
+		// it still collapses once the zoom hits either end of its range, so the
+		// long line is capped against the real gap rather than a fixed width —
+		// otherwise it grows straight through the other guy's bubble.
+		const gap = (SPEAKERS[1].x - SPEAKERS[0].x) * box.w * zoom;
 		bubbles[0].el.style.maxWidth = `${clamp((gap - 40) * 2, 140, 240)}px`;
 
 		// Now that the widths are settled, nudge anything hanging off an edge.
 		for (const b of bubbles) {
 			const half = b.el.offsetWidth / 2 + 10;
-			b.el.style.left = `${clamp(parseFloat(b.el.style.left), half, innerWidth - half)}px`;
+			b.el.style.left = `${clamp(parseFloat(b.el.style.left), half, vw - half)}px`;
 		}
 	}
 
@@ -135,7 +190,13 @@
 		}
 	});
 
-	addEventListener('resize', () => { if (watching) aim(); });
+	// The resting crop depends on the viewport too, so this runs either way.
+	addEventListener('resize', aim);
 
+	// Only worth doing once JS is placing the photo itself: left to the
+	// stylesheet, a plain cover on a viewport-sized layer is already right.
+	scene.style.inset = `-${OVERSCAN * 100}%`;
+
+	aim();
 	html.classList.add('js');
 })();
