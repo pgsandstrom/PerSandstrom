@@ -35,10 +35,11 @@
 	const ZOOM = { min: 1.6, max: 6.5 };
 	const MAX_LAYER = 15000; // px; a backstop against an absurdly big layer
 	const FRAME_Y = 0.5; // where they end up on screen, top to bottom
-	// The layer is grown past the viewport by this much a side, and the photo
-	// painted into it at the size the viewport alone would have taken. Nothing
-	// looks different at rest — but zooming about a point near an edge no
-	// longer runs out of photo, which is exactly what a wide window causes.
+	// The layer is grown past the viewport by up to this much a side, and the
+	// photo painted into it at the size the viewport alone would have taken.
+	// Nothing looks different at rest — but zooming about a point near an edge
+	// no longer runs out of photo, which is exactly what a wide window causes.
+	// Only ever as far as there is photo to reach, though: see `aim()`.
 	const OVERSCAN = 0.3;
 	// At rest, never let them sit further down the screen than this. A wide
 	// window crops a lot off the top and bottom of the photo, and they stand
@@ -162,7 +163,18 @@
 		const p = imgPoint(SUBJECT.x, SUBJECT.y, box);
 		// Everything above is in viewport coordinates; the layer starts one
 		// overscan up and to the left of them.
-		const ox = vw * OVERSCAN, oy = vh * OVERSCAN;
+		//
+		// The overscan is only worth the photo that actually sits outside the
+		// viewport — past that edge the extra layer paints nothing at all, and
+		// every pixel of it still has to be rastered. `cover` fills one axis
+		// exactly, so on that axis there is no overhang whatsoever: a portrait
+		// phone wants none vertically, a wide window none horizontally. Both
+		// end up with a layer around half the area, and because this only ever
+		// trims off parts the photo never reached, `edge` below and everything
+		// downstream of it come out identical.
+		const ox = Math.min(vw * OVERSCAN, Math.max(0, -box.x));
+		const oy = Math.min(vh * OVERSCAN, Math.max(0, -box.y, box.y + box.h - vh));
+		scene.style.inset = `${-oy}px ${-ox}px`;
 
 		// Painted at the size and place the viewport asked for, inside a bigger
 		// box — cover would have blown it up to the box instead.
@@ -189,7 +201,7 @@
 		// Set before the transform, so the transition that the transform kicks
 		// off is already carrying the right curve. The stylesheet's
 		// cubic-bezier stays as the fallback where linear() is not understood.
-		if (canLinear) scene.style.transitionTimingFunction = timing(zoom, watching);
+		if (canLinear) scene.style.setProperty('--zoom-ease', timing(zoom, watching));
 		scene.style.transform = watching
 			? `translate(${cx - p.x}px, ${cy - p.y}px) scale(${zoom})`
 			: 'scale(1)';
@@ -279,10 +291,8 @@
 		}, 120);
 	});
 
-	// Only worth doing once JS is placing the photo itself: left to the
-	// stylesheet, a plain cover on a viewport-sized layer is already right.
-	scene.style.inset = `-${OVERSCAN * 100}%`;
-
+	// The layer's own size is set by aim() now — it depends on how much photo
+	// falls outside the viewport, so it moves with the viewport like the rest.
 	aim();
 	html.classList.add('js');
 })();

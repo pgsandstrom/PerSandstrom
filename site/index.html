@@ -72,19 +72,25 @@
         font-family: var(--sans);
       }
 
-      /* The photo lives in its own layer so it can be zoomed on the GPU. */
+      /* The photo lives in its own layer so it can be zoomed on the GPU.
+         Bottom of the three fixed layers: photo, then #lift brightening it,
+         then body::before dimming the result. */
       #scene {
         position: fixed;
         inset: 0;
-        z-index: -2;
+        z-index: -3;
         background: #0a0c11 url("img/bergen.jpg") center center / cover no-repeat;
         transform: scale(1);
-        /* Zoom out. Fallback only: watchview.js replaces the timing function
-           with one built for this viewport's actual zoom, which is the only way
-           to keep the zoom looking even at every width — see `timing()` there.
-           This curve is that one shaped for a 6.5x zoom, which is what a phone
-           gets; browsers without linear() get a good approximation. */
-        transition: transform 2.1s cubic-bezier(0.25, 0.13, 0.4, 0.96);
+        /* Zoom out. Fallback only: watchview.js fills --zoom-ease with a curve
+           built for this viewport's actual zoom, which is the only way to keep
+           the zoom looking even at every width — see `timing()` there. This
+           curve is that one shaped for a 6.5x zoom, which is what a phone gets;
+           browsers without linear() fall back to it and get a good
+           approximation. It rides on a custom property rather than on
+           transition-timing-function so that it stays attached to the transform
+           alone — setting the timing function outright would hand the zoom's
+           curve to anything else that ever gets transitioned on this layer. */
+        transition: transform 2.1s var(--zoom-ease, cubic-bezier(0.25, 0.13, 0.4, 0.96));
         will-change: transform;
       }
 
@@ -99,6 +105,30 @@
           radial-gradient(120% 90% at 50% 0%, rgba(8, 10, 15, 0.3), rgba(6, 8, 12, 0.86)),
           linear-gradient(180deg, rgba(6, 8, 12, 0.15), rgba(4, 5, 9, 0.75));
         transition: opacity 1.2s ease;
+      }
+
+      /* Brightens the photo — the same brightness/contrast/saturate that used
+         to sit on #scene, so the look is unchanged. The difference is where the
+         work happens. On #scene it was a filter over a layer being scaled to
+         6.5x: re-run every time the compositor re-rastered that layer on the
+         way up, and it kept the layer off the cheap path for the whole zoom.
+         Filtering through a fixed layer instead does it at viewport resolution,
+         which costs the same at 6.5x as it does at rest.
+         Between the photo and the dim, so the dim still paints over a
+         brightened photo exactly as it did when the filter was on #scene —
+         above it, the dim would end up inside what gets brightened. */
+      #lift {
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        pointer-events: none;
+        transition:
+          backdrop-filter 0.45s ease,
+          -webkit-backdrop-filter 0.45s ease;
+      }
+      html.watching #lift {
+        -webkit-backdrop-filter: brightness(1.55) contrast(1.08) saturate(1.06);
+        backdrop-filter: brightness(1.55) contrast(1.08) saturate(1.06);
       }
 
       /* ---- the card ---------------------------------------------------- */
@@ -251,15 +281,13 @@
       }
       /* The transform itself is set from JS — it depends on where the subject
 		   lands, which depends on the viewport. */
-      /* Deliberately not transitioned. A filter pass over a full-screen layer
-         that is already being scaled to 6.5x costs a phone every frame of the
-         zoom, so this snaps — under the dim overlay below fading out at the
-         same moment, which is where most of the brightening reads from anyway. */
+      /* The brightening used to be a filter here and is on #lift now — same
+         values, same moment, but done at viewport resolution rather than over a
+         layer being scaled to 6.5x. This layer only ever moves. */
       html.watching #scene {
         /* Zoom in — the mirror of the curve above, i.e. (1-x2, 1-y2, 1-x1, 1-y1).
            Fallback only, same as above. */
-        transition: transform 2.1s cubic-bezier(0.6, 0.04, 0.75, 0.87);
-        filter: brightness(1.55) contrast(1.08) saturate(1.06);
+        transition: transform 2.1s var(--zoom-ease, cubic-bezier(0.6, 0.04, 0.75, 0.87));
       }
       html.watching body::before {
         opacity: 0.25;
@@ -410,6 +438,7 @@
            named here too or it outranks this and keeps animating. */
         html.watching #scene,
         #stage,
+        #lift,
         .bubble,
         .chip,
         .chip .go,
@@ -426,6 +455,7 @@
   </head>
   <body>
     <div id="scene" aria-hidden="true"></div>
+    <div id="lift" aria-hidden="true"></div>
 
     <main id="stage">
       <div class="card">
