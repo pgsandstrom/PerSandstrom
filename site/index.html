@@ -56,9 +56,7 @@
         z-index: -2;
         background: #0a0c11 url("img/bergen.jpg") center center / cover no-repeat;
         transform: scale(1);
-        transition:
-          transform 2.1s cubic-bezier(0.62, 0.02, 0.16, 1),
-          filter 2.1s ease;
+        transition: transform 2.1s cubic-bezier(0.62, 0.02, 0.16, 1);
         will-change: transform;
       }
 
@@ -182,6 +180,10 @@
       }
       /* The transform itself is set from JS — it depends on where the subject
 		   lands, which depends on the viewport. */
+      /* Deliberately not transitioned. A filter pass over a full-screen layer
+         that is already being scaled to 6.5x costs a phone every frame of the
+         zoom, so this snaps — under the dim overlay below fading out at the
+         same moment, which is where most of the brightening reads from anyway. */
       html.watching #scene {
         filter: brightness(1.55) contrast(1.08) saturate(1.06);
       }

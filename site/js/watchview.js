@@ -191,7 +191,25 @@
 	});
 
 	// The resting crop depends on the viewport too, so this runs either way.
-	addEventListener('resize', aim);
+	//
+	// A phone fires `resize` every time its URL bar slides away or a keyboard
+	// opens, which changes the height and nothing else. Re-aiming on that
+	// repaints the whole layer, and moving transform-origin part-way through
+	// the zoom retargets it in plain sight, so on a touch device a height-only
+	// change is left alone — the framing was worked out for a viewport this
+	// wide already, and rotating still changes the width. A window dragged
+	// about fires a burst of these either way, so they are coalesced.
+	const barSlides = matchMedia('(pointer: coarse)');
+	let aimedWidth = innerWidth;
+	let queued = 0;
+	addEventListener('resize', () => {
+		if (barSlides.matches && innerWidth === aimedWidth) return;
+		clearTimeout(queued);
+		queued = setTimeout(() => {
+			aimedWidth = innerWidth;
+			aim();
+		}, 120);
+	});
 
 	// Only worth doing once JS is placing the photo itself: left to the
 	// stylesheet, a plain cover on a viewport-sized layer is already right.
