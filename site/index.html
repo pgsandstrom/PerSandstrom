@@ -56,7 +56,12 @@
         z-index: -2;
         background: #0a0c11 url("img/bergen.jpg") center center / cover no-repeat;
         transform: scale(1);
-        transition: transform 2.1s cubic-bezier(0.62, 0.02, 0.16, 1);
+        /* Zoom out. Fallback only: watchview.js replaces the timing function
+           with one built for this viewport's actual zoom, which is the only way
+           to keep the zoom looking even at every width — see `timing()` there.
+           This curve is that one shaped for a 6.5x zoom, which is what a phone
+           gets; browsers without linear() get a good approximation. */
+        transition: transform 2.1s cubic-bezier(0.25, 0.13, 0.4, 0.96);
         will-change: transform;
       }
 
@@ -185,6 +190,9 @@
          zoom, so this snaps — under the dim overlay below fading out at the
          same moment, which is where most of the brightening reads from anyway. */
       html.watching #scene {
+        /* Zoom in — the mirror of the curve above, i.e. (1-x2, 1-y2, 1-x1, 1-y1).
+           Fallback only, same as above. */
+        transition: transform 2.1s cubic-bezier(0.6, 0.04, 0.75, 0.87);
         filter: brightness(1.55) contrast(1.08) saturate(1.06);
       }
       html.watching body::before {
@@ -332,6 +340,9 @@
 
       @media (prefers-reduced-motion: reduce) {
         #scene,
+        /* The zoom-in curve lives on a more specific selector, so it has to be
+           named here too or it outranks this and keeps animating. */
+        html.watching #scene,
         #stage,
         .bubble,
         body::before,

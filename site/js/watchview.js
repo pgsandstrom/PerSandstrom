@@ -44,6 +44,16 @@
 	// window crops a lot off the top and bottom of the photo, and they stand
 	// low enough in it to be cropped away altogether.
 	const REST_MAX_Y = 0.86;
+	// The zoom is shaped by saying how fast it should *look* like it is zooming
+	// at each moment, where 1 is the steady rate an even zoom would hold all the
+	// way through. PEAK_RATE is the top speed as a multiple of that, PEAK_AT is
+	// where it lands. The profile has to average 1 whatever happens — that is
+	// what finishing on time means — so these two trade against the tail:
+	// lowering PEAK_RATE fills the tail in, raising it hollows the tail out.
+	// The original curve here peaked at 3.44 and was judged too fast.
+	const PEAK_RATE = 2.0;
+	const PEAK_AT = 0.35; // early peak, long settle — the shape that was liked
+	const EASE_STEPS = 32; // sample points in the generated timing function
 
 	const html = document.documentElement;
 	const scene = document.getElementById('scene');
@@ -86,6 +96,60 @@
 		return clamp(fit, ZOOM.min, ZOOM.max);
 	}
 
+	// A zoom is read logarithmically: 1x to 2x looks like as much zoom as 3.25x
+	// to 6.5x. A transition interpolates `scale` linearly, so for the zoom to
+	// look even the scale has to move as zoom^t instead. No single cubic-bezier
+	// can do that, because the right curve depends on the zoom and the zoom
+	// depends on the viewport — a curve shaped for a phone's 6.5x turns
+	// back-loaded on a wide monitor, which is the late speed-up. So the curve is
+	// built for whatever zoom this viewport ended up with.
+	const canLinear = typeof CSS !== 'undefined' &&
+		CSS.supports?.('transition-timing-function', 'linear(0, 1)');
+
+	// How far through the zoom it should *look*, moment by moment. This lives in
+	// log space, so it does not depend on the zoom at all and is worked out once.
+	const CURVE = (() => {
+		const M = 512;
+		// A rate profile of t^(a-1) * (1-t)^(b-1). Both exponents land above 1,
+		// so it leaves and arrives at a standstill; placing the peak fixes b
+		// from a, which leaves one number to bisect for the wanted top speed.
+		const rateFor = (a) => {
+			const b = 1 + ((a - 1) * (1 - PEAK_AT)) / PEAK_AT;
+			const v = [];
+			for (let i = 0; i <= M; i++) v.push((i / M) ** (a - 1) * (1 - i / M) ** (b - 1));
+			let sum = 0;
+			for (let i = 0; i <= M; i++) sum += v[i] * (i === 0 || i === M ? 0.5 : 1);
+			return v.map((y) => y / (sum / M)); // ...normalised so it averages 1
+		};
+		let lo = 1.001, hi = 12;
+		for (let i = 0; i < 50; i++) {
+			const a = (lo + hi) / 2;
+			if (Math.max(...rateFor(a)) < PEAK_RATE) lo = a;
+			else hi = a;
+		}
+		const rate = rateFor((lo + hi) / 2);
+		// Progress is the running integral of the rate.
+		const w = [0];
+		for (let i = 1; i <= M; i++) w.push(w[i - 1] + (rate[i - 1] + rate[i]) / 2 / M);
+		const out = [];
+		for (let i = 0; i <= EASE_STEPS; i++) out.push(w[Math.round((i / EASE_STEPS) * M)] / w[M]);
+		out[EASE_STEPS] = 1; // exactly, whatever the integration drifted to
+		return out;
+	})();
+
+	function timing(zoom, inward) {
+		if (!(zoom > 1.001)) return 'linear';
+		// Where scale should be to look that far through, undone back through
+		// the linear interpolation to get the progress that puts it there. Going
+		// in it climbs zoom^w; coming back out it retraces zoom^(1-w), which
+		// leaves the long settle at the end of both directions.
+		const pts = CURVE.map((w) => {
+			const s = zoom ** (inward ? w : 1 - w);
+			return ((inward ? s - 1 : zoom - s) / (zoom - 1)).toFixed(5);
+		});
+		return `linear(${pts.join(',')})`;
+	}
+
 	// Viewport position of a point given as a fraction of the photo, at rest.
 	function imgPoint(fx, fy, box) {
 		return { x: box.x + fx * box.w, y: box.y + fy * box.h };
@@ -122,6 +186,10 @@
 		// middle of the screen — with transform-origin on the subject, the
 		// translate lands it exactly on the target.
 		scene.style.transformOrigin = `${p.x + ox}px ${p.y + oy}px`;
+		// Set before the transform, so the transition that the transform kicks
+		// off is already carrying the right curve. The stylesheet's
+		// cubic-bezier stays as the fallback where linear() is not understood.
+		if (canLinear) scene.style.transitionTimingFunction = timing(zoom, watching);
 		scene.style.transform = watching
 			? `translate(${cx - p.x}px, ${cy - p.y}px) scale(${zoom})`
 			: 'scale(1)';
