@@ -85,6 +85,10 @@ rm -r /apps/game-servers/fightgame /apps/persandstrom.com/games/fightgame
 
 ## One time setup on the existing server
 
+Done on 2026-11-04, kept here for reference. This repo is cloned at `/root/PerSandstrom` on the
+server, and the nginx config from before the change is backed up at
+`/root/persandstrom.com.conf.bak-2026-11-04`.
+
 certbot owns the live nginx config, so the repo copy is only used on a fresh server. On the
 existing server, add the three `location ~ ^/games/...` blocks from `nginx/persandstrom.com.conf`
 to the **443** server block in `/etc/nginx/conf.d/persandstrom.com.conf`, in the same order (the
@@ -107,8 +111,10 @@ For backends, also:
 Everything comes back from the repos: this one for the home page, nginx and systemd, each game's
 repo for the game. As root on the new server:
 
-1. Install the packages: `nginx`, `rsync`, `git`, `certbot` with its nginx plugin, and Node 24
-   at `/usr/bin/node` (see above).
+1. Install the packages. The current server is Fedora:
+   `dnf install nginx rsync git certbot python3-certbot-nginx nodejs` (Fedora 44's `nodejs` is
+   Node 24 at `/usr/bin/node`). Keep SELinux enforcing: nginx reaching the game sockets in
+   `/run/games/` works without any SELinux changes (checked with `ausearch -m avc` on Fedora 44).
 2. Allow the release SSH key: add the public half of the key the game repos use (`./id_rsa`
    there) to `/root/.ssh/authorized_keys`.
 3. Clone this repo anywhere and run `./do_complete_deploy.sh`. It deploys the home page,
