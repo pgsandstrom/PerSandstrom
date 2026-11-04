@@ -13,7 +13,10 @@ mkdir -p "/apps/$DOMAIN"
 # --chmod sets the permissions on the deployed copy, so we never have to touch
 # the permissions of the files in the repo (which git tracks, and which would
 # otherwise show up as a mode change on every single file after a deploy).
-rsync -a --delete --chmod=D755,F644 site/ "/apps/$DOMAIN/"
+#
+# /games/ is excluded: each game is released into /apps/$DOMAIN/games/<name>/
+# from its own repo, so --delete must not touch it.
+rsync -a --delete --exclude=/games/ --chmod=D755,F644 site/ "/apps/$DOMAIN/"
 
 # nginx
 # Only install the config if it isn't there yet. Once nginx is set up on a
