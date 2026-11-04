@@ -1,0 +1,32 @@
+# Backend for a game served at persandstrom.com/games/<name>/, see GAMES.md.
+#
+# One instance per game: game@fightgame.service runs
+# /apps/game-servers/fightgame/server.cjs. The game listens on the unix socket in
+# $SOCKET, and nginx proxies /games/<name>/ws to it.
+#
+# Installed by do_complete_deploy.sh. A game's release.sh enables and restarts its
+# instance.
+
+[Unit]
+Description=Game server for persandstrom.com/games/%i/
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/node /apps/game-servers/%i/server.cjs
+Environment=NODE_ENV=production
+Environment=SOCKET=/run/games/%i/server.sock
+
+# /run/games/<name>/, created on start and removed on stop, so no stale socket
+# is ever left behind. 0755 so nginx can reach the socket inside it.
+RuntimeDirectory=games/%i
+RuntimeDirectoryMode=0755
+
+# Runs as a throwaway user that only exists while the service runs. It also makes
+# the file system read only, except for /tmp and the runtime directory.
+DynamicUser=yes
+
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

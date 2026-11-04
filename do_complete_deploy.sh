@@ -18,6 +18,14 @@ mkdir -p "/apps/$DOMAIN"
 # from its own repo, so --delete must not touch it.
 rsync -a --delete --exclude=/games/ --chmod=D755,F644 site/ "/apps/$DOMAIN/"
 
+# Game backends, see GAMES.md. Unlike the nginx config, nothing else edits
+# this file, so it is always overwritten. Running games pick up a change
+# the next time they are restarted.
+mkdir -p /apps/game-servers
+rsync systemd/game@.service /etc/systemd/system/
+chmod 644 /etc/systemd/system/game@.service
+systemctl daemon-reload
+
 # nginx
 # Only install the config if it isn't there yet. Once nginx is set up on a
 # server, certbot owns that file (it adds the 443 block and cert paths), so
